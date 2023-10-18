@@ -15,7 +15,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "AzureSqlTable_Changemakers",
+						"referenceName": "GoogleAnalytics_AzureSqlTable",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
@@ -43,10 +43,10 @@
 				"     ignoreNoFilesFound: false) ~> SourceProcessFiles",
 				"SourceProcessFiles derive(date = toDate(date, 'dd/MM/yyyy'),",
 				"          datetime = toTimestamp(datetime, 'dd/MM/yyyy HH:mm'),",
-				"          country = 'country',",
-				"          eventName = 'eventName',",
-				"          deviceCategory = 'deviceCategory',",
-				"          unifiedScreenName = 'screenName',",
+				"          country = country,",
+				"          eventName = eventName,",
+				"          deviceCategory = deviceCategory,",
+				"          screenName = unifiedScreenName,",
 				"          activeUsers = toInteger(activeUsers),",
 				"          eventCount = toInteger(eventCount),",
 				"          screenPageViews = toInteger(screenPageViews)) ~> derivedColumn1",
