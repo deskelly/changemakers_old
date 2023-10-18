@@ -1,0 +1,17 @@
+{
+	"name": "AzureSqlTable_Changemakers",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase_Changemakers",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Raw_GoogleAnalytics"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
