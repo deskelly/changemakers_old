@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "DF-JCDUK-PRD-Changemakers"
+		},
+		"AzureSqlDatabase_Changemakers_connectionString": {
+			"value": ""
+		},
+		"GACall_functionKey": {
+			"value": ""
+		},
+		"GoogleAnalytics_GetFiles_connectionString": {
+			"value": ""
+		},
+		"GACall_properties_typeProperties_functionAppUrl": {
+			"value": "https://getoauthkey-uk.azurewebsites.net"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

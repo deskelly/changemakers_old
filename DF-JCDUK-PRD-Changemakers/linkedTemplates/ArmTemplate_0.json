@@ -1,0 +1,388 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DF-JCDUK-PRD-Changemakers"
+		},
+		"AzureSqlDatabase_Changemakers_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase_Changemakers'"
+		},
+		"GACall_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'GACall'"
+		},
+		"GoogleAnalytics_GetFiles_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'GoogleAnalytics_GetFiles'"
+		},
+		"GACall_properties_typeProperties_functionAppUrl": {
+			"type": "string",
+			"defaultValue": "https://getoauthkey-uk.azurewebsites.net"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase_Changemakers')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureSqlDatabase_Changemakers_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/GACall')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureFunction",
+				"typeProperties": {
+					"functionAppUrl": "[parameters('GACall_properties_typeProperties_functionAppUrl')]",
+					"functionKey": {
+						"type": "SecureString",
+						"value": "[parameters('GACall_functionKey')]"
+					},
+					"authentication": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_GetFiles')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('GoogleAnalytics_GetFiles_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/GoogleAnalyics_GetFiles')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "GoogleAnalytics_GetFiles",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "csvdumps",
+						"container": "googleanalytics"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "date",
+						"type": "String"
+					},
+					{
+						"name": "datetime",
+						"type": "String"
+					},
+					{
+						"name": "country",
+						"type": "String"
+					},
+					{
+						"name": "eventName",
+						"type": "String"
+					},
+					{
+						"name": "deviceCategory",
+						"type": "String"
+					},
+					{
+						"name": "unifiedScreenName",
+						"type": "String"
+					},
+					{
+						"name": "activeUsers",
+						"type": "String"
+					},
+					{
+						"name": "eventCount",
+						"type": "String"
+					},
+					{
+						"name": "screenPageViews",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/GoogleAnalytics_GetFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_AzureSqlTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase_Changemakers",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Temp_Raw_GoogleAnalytics"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_DataFlow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "GoogleAnalyics_GetFiles",
+								"type": "DatasetReference"
+							},
+							"name": "SourceProcessFiles"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "GoogleAnalytics_AzureSqlTable",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumn1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          date as string,",
+						"          datetime as string,",
+						"          country as string,",
+						"          eventName as string,",
+						"          deviceCategory as string,",
+						"          unifiedScreenName as string,",
+						"          activeUsers as string,",
+						"          eventCount as string,",
+						"          screenPageViews as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> SourceProcessFiles",
+						"SourceProcessFiles derive(date = toDate(date, 'dd/MM/yyyy'),",
+						"          datetime = toTimestamp(datetime, 'dd/MM/yyyy HH:mm'),",
+						"          country = country,",
+						"          eventName = eventName,",
+						"          deviceCategory = deviceCategory,",
+						"          unifiedScreenName = unifiedScreenName,",
+						"          activeUsers = toInteger(activeUsers),",
+						"          eventCount = toInteger(eventCount),",
+						"          screenPageViews = toInteger(screenPageViews)) ~> derivedColumn1",
+						"derivedColumn1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     postSQLs:['delete rg \\nfrom Raw_GoogleAnalytics rg\\ninner join Temp_Raw_GoogleAnalytics trg\\non rg.date = trg.date and rg.country = trg.country and rg.eventName = trg.eventName and rg.deviceCategory = trg.deviceCategory and rg.unifiedScreenName = trg.unifiedScreenName','with raw_data as (\\n    select \\n        country\\n        ,eventName\\n        ,deviceCategory\\n        ,unifiedScreenName\\n        ,sum(activeUsers) as activeUsers\\n        ,sum(eventCount) as eventCount\\n        ,sum(screenPageViews) as screenPageViews \\n    from Raw_GoogleAnalytics\\n    group by country,eventName,deviceCategory,unifiedScreenName\\n)\\n, tmp_raw_data as (\\n    select\\n        date\\n        , datetime\\n        , country\\n        , eventName\\n        , deviceCategory\\n        , unifiedScreenName\\n        , activeUsers\\n        , eventCount\\n        , screenPageViews\\n    from Temp_Raw_GoogleAnalytics\\n)\\n, diff_calc as (\\n    select \\n        trg.date\\n        , trg.datetime\\n        , trg.country\\n        , trg.eventName\\n        , trg.deviceCategory\\n        , trg.unifiedScreenName\\n        , case when rg.activeUsers is null then trg.activeUsers else (trg.activeUsers - rg.activeUsers) end as activeUsers\\n        , case when rg.eventCount is null then trg.eventCount else (trg.eventCount - rg.eventCount) end as eventCount\\n        , case when rg.screenPageViews is null then trg.screenPageViews else (trg.screenPageViews - rg.screenPageViews) end as screenPageViews\\n    from tmp_raw_data trg\\n    left outer join raw_data rg\\n    on trg.country = rg.country and trg.eventName = rg.eventName and trg.deviceCategory = rg.deviceCategory and trg.unifiedScreenName = rg.unifiedScreenName\\n)\\ninsert into Raw_GoogleAnalytics\\n    select\\n        date\\n        , datetime\\n        , country\\n        , eventName\\n        , deviceCategory\\n        , unifiedScreenName\\n        , activeUsers\\n        , eventCount\\n        , screenPageViews\\n    from diff_calc\\n    where activeUsers > 0 or eventCount > 0 or screenPageViews > 0','drop table if exists Temp_Raw_GoogleAnalytics'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/GoogleAnalyics_GetFiles')]",
+				"[concat(variables('factoryId'), '/datasets/GoogleAnalytics_AzureSqlTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Main')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"description": "",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "GoogleAnalyics_GetFiles",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"modifiedDatetimeStart": {
+									"value": "@addDays(utcNow(), -20)",
+									"type": "Expression"
+								},
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata1",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Metadata1').output.childItems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Data flow1",
+									"type": "ExecuteDataFlow",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataflow": {
+											"referenceName": "GoogleAnalytics_DataFlow",
+											"type": "DataFlowReference",
+											"parameters": {},
+											"datasetParameters": {
+												"SourceProcessFiles": {},
+												"sink1": {}
+											}
+										},
+										"staging": {},
+										"compute": {
+											"coreCount": 16,
+											"computeType": "General"
+										},
+										"traceLevel": "Fine"
+									}
+								},
+								{
+									"name": "Delete1",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Data flow1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "GoogleAnalyics_GetFiles",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"logStorageSettings": {
+											"linkedServiceName": {
+												"referenceName": "GoogleAnalytics_GetFiles",
+												"type": "LinkedServiceReference"
+											}
+										},
+										"enableLogging": true,
+										"storeSettings": {
+											"type": "AzureBlobStorageReadSettings",
+											"recursive": true,
+											"wildcardFileName": {
+												"value": "@{item().name}",
+												"type": "Expression"
+											},
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "GoogleAnalytics"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-10-18T12:09:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/GoogleAnalyics_GetFiles')]",
+				"[concat(variables('factoryId'), '/dataflows/GoogleAnalytics_DataFlow')]",
+				"[concat(variables('factoryId'), '/linkedServices/GoogleAnalytics_GetFiles')]"
+			]
+		}
+	]
+}
