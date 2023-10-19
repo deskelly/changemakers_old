@@ -1,0 +1,12 @@
+{
+	"name": "GoogleAnalytics_DatabaseQueries",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlDatabase_Changemakers",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	}
+}
