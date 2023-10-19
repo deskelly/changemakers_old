@@ -114,7 +114,7 @@
 									"type": "AzureBlobStorageReadSettings",
 									"recursive": true,
 									"wildcardFileName": {
-										"value": "@{activity('Get Metadata1').output.childItems}",
+										"value": "@{item().name}",
 										"type": "Expression"
 									},
 									"enablePartitionDiscovery": false
