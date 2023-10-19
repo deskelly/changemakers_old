@@ -159,6 +159,24 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_DatabaseQueries')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase_Changemakers",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_DataFlow')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -220,7 +238,6 @@
 						"     upsertable:false,",
 						"     recreate:true,",
 						"     format: 'table',",
-						"     postSQLs:['delete rg \\nfrom [changemakers-prd].[dbo].[Raw_GoogleAnalytics] rg\\ninner join [changemakers-prd].[dbo].[Temp_Raw_GoogleAnalytics] trg\\non rg.date = trg.date and rg.country = trg.country and rg.eventName = trg.eventName and rg.deviceCategory = trg.deviceCategory and rg.unifiedScreenName = trg.unifiedScreenName;','with raw_data as (\\n    select \\n        country\\n        ,eventName\\n        ,deviceCategory\\n        ,unifiedScreenName\\n        ,sum(activeUsers) as activeUsers\\n        ,sum(eventCount) as eventCount\\n        ,sum(screenPageViews) as screenPageViews \\n    from [changemakers-prd].[dbo].[Raw_GoogleAnalytics]\\n    group by country,eventName,deviceCategory,unifiedScreenName\\n)\\n, tmp_raw_data as (\\n    select\\n        date\\n        , datetime\\n        , country\\n        , eventName\\n        , deviceCategory\\n        , unifiedScreenName\\n        , activeUsers\\n        , eventCount\\n        , screenPageViews\\n    from [changemakers-prd].[dbo].[Temp_Raw_GoogleAnalytics]\\n)\\n, diff_calc as (\\n    select \\n        trg.date\\n        , trg.datetime\\n        , trg.country\\n        , trg.eventName\\n        , trg.deviceCategory\\n        , trg.unifiedScreenName\\n        , case when rg.activeUsers is null then trg.activeUsers else (trg.activeUsers - rg.activeUsers) end as activeUsers\\n        , case when rg.eventCount is null then trg.eventCount else (trg.eventCount - rg.eventCount) end as eventCount\\n        , case when rg.screenPageViews is null then trg.screenPageViews else (trg.screenPageViews - rg.screenPageViews) end as screenPageViews\\n    from tmp_raw_data trg\\n    left outer join raw_data rg\\n    on trg.country = rg.country and trg.eventName = rg.eventName and trg.deviceCategory = rg.deviceCategory and trg.unifiedScreenName = rg.unifiedScreenName\\n)\\ninsert into [changemakers-prd].[dbo].[Raw_GoogleAnalytics]\\n    select\\n        date\\n        , datetime\\n        , country\\n        , eventName\\n        , deviceCategory\\n        , unifiedScreenName\\n        , activeUsers\\n        , eventCount\\n        , screenPageViews\\n    from diff_calc\\n    where activeUsers > 0 or eventCount > 0 or screenPageViews > 0;','drop table if exists [changemakers-prd].[dbo].[Temp_Raw_GoogleAnalytics];'],",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true,",
 						"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
@@ -328,9 +345,9 @@
 									"type": "Delete",
 									"dependsOn": [
 										{
-											"activity": "Data flow1",
+											"activity": "Script3",
 											"dependencyConditions": [
-												"Succeeded"
+												"Completed"
 											]
 										}
 									],
@@ -365,6 +382,105 @@
 											"enablePartitionDiscovery": false
 										}
 									}
+								},
+								{
+									"name": "Script1",
+									"type": "Script",
+									"dependsOn": [
+										{
+											"activity": "Data flow1",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "AzureSqlDatabase_Changemakers",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": "delete rg \nfrom Raw_GoogleAnalytics rg\ninner join Temp_Raw_GoogleAnalytics trg\non rg.date = trg.date and rg.country = trg.country and rg.eventName = trg.eventName and rg.deviceCategory = trg.deviceCategory and rg.unifiedScreenName = trg.unifiedScreenName;"
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								},
+								{
+									"name": "Script2",
+									"type": "Script",
+									"dependsOn": [
+										{
+											"activity": "Script1",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "AzureSqlDatabase_Changemakers",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": "with raw_data as (\n    select \n        country\n        ,eventName\n        ,deviceCategory\n        ,unifiedScreenName\n        ,sum(activeUsers) as activeUsers\n        ,sum(eventCount) as eventCount\n        ,sum(screenPageViews) as screenPageViews \n    from Raw_GoogleAnalytics\n    group by country,eventName,deviceCategory,unifiedScreenName\n)\n, tmp_raw_data as (\n    select\n        date\n        , datetime\n        , country\n        , eventName\n        , deviceCategory\n        , unifiedScreenName\n        , activeUsers\n        , eventCount\n        , screenPageViews\n    from Temp_Raw_GoogleAnalytics\n)\n, diff_calc as (\n    select \n        trg.date\n        , trg.datetime\n        , trg.country\n        , trg.eventName\n        , trg.deviceCategory\n        , trg.unifiedScreenName\n        , case when rg.activeUsers is null then trg.activeUsers else (trg.activeUsers - rg.activeUsers) end as activeUsers\n        , case when rg.eventCount is null then trg.eventCount else (trg.eventCount - rg.eventCount) end as eventCount\n        , case when rg.screenPageViews is null then trg.screenPageViews else (trg.screenPageViews - rg.screenPageViews) end as screenPageViews\n    from tmp_raw_data trg\n    left outer join raw_data rg\n    on trg.country = rg.country and trg.eventName = rg.eventName and trg.deviceCategory = rg.deviceCategory and trg.unifiedScreenName = rg.unifiedScreenName\n)\ninsert into Raw_GoogleAnalytics\n    select\n        date\n        , datetime\n        , country\n        , eventName\n        , deviceCategory\n        , unifiedScreenName\n        , activeUsers\n        , eventCount\n        , screenPageViews\n    from diff_calc\n    where activeUsers > 0 or eventCount > 0 or screenPageViews > 0;"
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								},
+								{
+									"name": "Script3",
+									"type": "Script",
+									"dependsOn": [
+										{
+											"activity": "Script2",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "AzureSqlDatabase_Changemakers",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": "drop table if exists Temp_Raw_GoogleAnalytics;"
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
 								}
 							]
 						}
@@ -382,6 +498,7 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/GoogleAnalyics_GetFiles')]",
 				"[concat(variables('factoryId'), '/dataflows/GoogleAnalytics_DataFlow')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]",
 				"[concat(variables('factoryId'), '/linkedServices/GoogleAnalytics_GetFiles')]"
 			]
 		}
