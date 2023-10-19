@@ -46,7 +46,7 @@
 				"          country = country,",
 				"          eventName = eventName,",
 				"          deviceCategory = deviceCategory,",
-				"          screenName = unifiedScreenName,",
+				"          unifiedScreenName = unifiedScreenName,",
 				"          activeUsers = toInteger(activeUsers),",
 				"          eventCount = toInteger(eventCount),",
 				"          screenPageViews = toInteger(screenPageViews)) ~> derivedColumn1",
