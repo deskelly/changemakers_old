@@ -159,24 +159,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_DatabaseQueries')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "AzureSqlDatabase_Changemakers",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [],
-				"typeProperties": {}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/GoogleAnalytics_DataFlow')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
