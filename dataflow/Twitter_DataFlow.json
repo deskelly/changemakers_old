@@ -15,17 +15,13 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "GoogleAnalytics_AzureSqlTable",
+						"referenceName": "Twitter_AzureSqlTable",
 						"type": "DatasetReference"
 					},
 					"name": "sink1"
 				}
 			],
-			"transformations": [
-				{
-					"name": "derivedColumn1"
-				}
-			],
+			"transformations": [],
 			"scriptLines": [
 				"source(output(",
 				"          Date as date 'yyyy-MM-dd',",
@@ -70,8 +66,7 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false) ~> SourceProcessFiles",
-				"SourceProcessFiles derive(date = ERROR_FUNCTION('')) ~> derivedColumn1",
-				"derivedColumn1 sink(allowSchemaDrift: true,",
+				"SourceProcessFiles sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
 				"     insertable:true,",
@@ -81,7 +76,29 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink1"
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          date = Date,",
+				"          tweets_published = {Tweets published},",
+				"          impressions,",
+				"          engagements,",
+				"          engagement_rate = {engagement rate},",
+				"          retweets,",
+				"          replies,",
+				"          likes,",
+				"          {user_profile_ clicks} = {user profile clicks},",
+				"          url_clicks = {url clicks},",
+				"          hashtag_clicks = {hashtag clicks},",
+				"          detail_expands = {detail expands},",
+				"          permalink_clicks = {permalink clicks},",
+				"          app_opens = {app opens},",
+				"          app_installs = {app installs},",
+				"          follows,",
+				"          email_tweet = {email tweet},",
+				"          dial_phone = {dial phone},",
+				"          media_views = {media views},",
+				"          media_engagements = {media engagements}",
+				"     )) ~> sink1"
 			]
 		}
 	}
