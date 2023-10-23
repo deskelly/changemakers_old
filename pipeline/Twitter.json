@@ -104,11 +104,20 @@
 									"referenceName": "Twitter_GetFiles",
 									"type": "DatasetReference"
 								},
+								"logStorageSettings": {
+									"linkedServiceName": {
+										"referenceName": "GoogleAnalytics_GetFiles",
+										"type": "LinkedServiceReference"
+									}
+								},
 								"enableLogging": true,
 								"storeSettings": {
 									"type": "AzureBlobStorageReadSettings",
 									"recursive": true,
-									"wildcardFileName": "@{item().name}",
+									"wildcardFileName": {
+										"value": "@{item().name}",
+										"type": "Expression"
+									},
 									"enablePartitionDiscovery": false
 								}
 							}
