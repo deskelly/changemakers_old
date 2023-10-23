@@ -19,6 +19,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'GoogleAnalytics_GetFiles'"
 		},
+		"logging_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'logging'"
+		},
 		"GACall_properties_typeProperties_functionAppUrl": {
 			"type": "string",
 			"defaultValue": "https://getoauthkey-uk.azurewebsites.net"
@@ -269,7 +273,7 @@
 					"elapsedTimeMetric": {}
 				},
 				"folder": {
-					"name": "GoogleAnalytics"
+					"name": "GoogleAnalytics_API"
 				},
 				"annotations": [],
 				"lastPublishTime": "2023-10-18T12:09:10Z"
@@ -279,6 +283,156 @@
 				"[concat(variables('factoryId'), '/dataflows/GoogleAnalytics_DataFlow')]",
 				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]",
 				"[concat(variables('factoryId'), '/linkedServices/GoogleAnalytics_GetFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Twitter')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata1",
+						"description": "",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "Twitter_GetFiles",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"modifiedDatetimeStart": {
+									"value": "@addDays(utcNow(), -20)",
+									"type": "Expression"
+								},
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Metadata1",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Metadata1').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Data flow1",
+									"type": "ExecuteDataFlow",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataflow": {
+											"referenceName": "Twitter_DataFlow",
+											"type": "DataFlowReference",
+											"parameters": {},
+											"datasetParameters": {
+												"SourceProcessFiles": {},
+												"sink1": {}
+											}
+										},
+										"staging": {},
+										"compute": {
+											"coreCount": 16,
+											"computeType": "General"
+										},
+										"traceLevel": "Fine"
+									}
+								},
+								{
+									"name": "Delete1",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "Data flow1",
+											"dependencyConditions": [
+												"Completed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "Twitter_GetFiles",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"logStorageSettings": {
+											"linkedServiceName": {
+												"referenceName": "logging",
+												"type": "LinkedServiceReference"
+											}
+										},
+										"enableLogging": true,
+										"storeSettings": {
+											"type": "AzureBlobStorageReadSettings",
+											"recursive": true,
+											"wildcardFileName": {
+												"value": "@{item().name}",
+												"type": "Expression"
+											},
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-10-18T12:09:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Twitter_GetFiles')]",
+				"[concat(variables('factoryId'), '/dataflows/Twitter_DataFlow')]",
+				"[concat(variables('factoryId'), '/linkedServices/logging')]"
 			]
 		},
 		{
@@ -365,6 +519,207 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Twitter_AzureSqlTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase_Changemakers",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Temp_Raw_Twitter"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase_Changemakers')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Twitter_GetFiles')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "GoogleAnalytics_GetFiles",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "twitter"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Date",
+						"type": "String"
+					},
+					{
+						"name": "Tweets published",
+						"type": "String"
+					},
+					{
+						"name": "impressions",
+						"type": "String"
+					},
+					{
+						"name": "engagements",
+						"type": "String"
+					},
+					{
+						"name": "engagement rate",
+						"type": "String"
+					},
+					{
+						"name": "retweets",
+						"type": "String"
+					},
+					{
+						"name": "replies",
+						"type": "String"
+					},
+					{
+						"name": "likes",
+						"type": "String"
+					},
+					{
+						"name": "user profile clicks",
+						"type": "String"
+					},
+					{
+						"name": "url clicks",
+						"type": "String"
+					},
+					{
+						"name": "hashtag clicks",
+						"type": "String"
+					},
+					{
+						"name": "detail expands",
+						"type": "String"
+					},
+					{
+						"name": "permalink clicks",
+						"type": "String"
+					},
+					{
+						"name": "app opens",
+						"type": "String"
+					},
+					{
+						"name": "app installs",
+						"type": "String"
+					},
+					{
+						"name": "follows",
+						"type": "String"
+					},
+					{
+						"name": "email tweet",
+						"type": "String"
+					},
+					{
+						"name": "dial phone",
+						"type": "String"
+					},
+					{
+						"name": "media views",
+						"type": "String"
+					},
+					{
+						"name": "media engagements",
+						"type": "String"
+					},
+					{
+						"name": "promoted impressions",
+						"type": "String"
+					},
+					{
+						"name": "promoted engagements",
+						"type": "String"
+					},
+					{
+						"name": "promoted engagement rate",
+						"type": "String"
+					},
+					{
+						"name": "promoted retweets",
+						"type": "String"
+					},
+					{
+						"name": "promoted replies",
+						"type": "String"
+					},
+					{
+						"name": "promoted likes",
+						"type": "String"
+					},
+					{
+						"name": "promoted user profile clicks",
+						"type": "String"
+					},
+					{
+						"name": "promoted url clicks",
+						"type": "String"
+					},
+					{
+						"name": "promoted hashtag clicks",
+						"type": "String"
+					},
+					{
+						"name": "promoted detail expands",
+						"type": "String"
+					},
+					{
+						"name": "promoted permalink clicks",
+						"type": "String"
+					},
+					{
+						"name": "promoted app opens",
+						"type": "String"
+					},
+					{
+						"name": "promoted app installs",
+						"type": "String"
+					},
+					{
+						"name": "promoted follows",
+						"type": "String"
+					},
+					{
+						"name": "promoted email tweet",
+						"type": "String"
+					},
+					{
+						"name": "promoted dial phone",
+						"type": "String"
+					},
+					{
+						"name": "promoted media views",
+						"type": "String"
+					},
+					{
+						"name": "promoted media engagements",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/GoogleAnalytics_GetFiles')]"
 			]
 		},
 		{
@@ -483,6 +838,131 @@
 				"[concat(variables('factoryId'), '/datasets/GoogleAnalyics_GetFiles')]",
 				"[concat(variables('factoryId'), '/datasets/GoogleAnalytics_AzureSqlTable')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Twitter_DataFlow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "Twitter_GetFiles",
+								"type": "DatasetReference"
+							},
+							"name": "SourceProcessFiles"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Twitter_AzureSqlTable",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          Date as date 'yyyy-MM-dd',",
+						"          {Tweets published} as integer '000',",
+						"          impressions as integer '000',",
+						"          engagements as integer '000',",
+						"          {engagement rate} as double '###,###,000.###',",
+						"          retweets as integer '000',",
+						"          replies as integer '000',",
+						"          likes as integer '000',",
+						"          {user profile clicks} as integer '000',",
+						"          {url clicks} as integer '0',",
+						"          {hashtag clicks} as integer '0',",
+						"          {detail expands} as integer '0',",
+						"          {permalink clicks} as integer '0',",
+						"          {app opens} as integer '0',",
+						"          {app installs} as integer '0',",
+						"          follows as integer '0',",
+						"          {email tweet} as integer '000',",
+						"          {dial phone} as integer '000',",
+						"          {media views} as integer '000',",
+						"          {media engagements} as integer '000',",
+						"          {promoted impressions} as integer '000',",
+						"          {promoted engagements} as integer '000',",
+						"          {promoted engagement rate} as integer '000',",
+						"          {promoted retweets} as integer '000',",
+						"          {promoted replies} as integer '000',",
+						"          {promoted likes} as integer '000',",
+						"          {promoted user profile clicks} as integer '000',",
+						"          {promoted url clicks} as integer '000',",
+						"          {promoted hashtag clicks} as integer '000',",
+						"          {promoted detail expands} as integer '000',",
+						"          {promoted permalink clicks} as integer '000',",
+						"          {promoted app opens} as integer '000',",
+						"          {promoted app installs} as integer '000',",
+						"          {promoted follows} as integer '000',",
+						"          {promoted email tweet} as integer '000',",
+						"          {promoted dial phone} as integer '000',",
+						"          {promoted media views} as integer '000',",
+						"          {promoted media engagements} as integer '000'",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> SourceProcessFiles",
+						"SourceProcessFiles sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     postSQLs:['delete from Raw_Twitter where \\ndate in (select distinct date from Temp_Raw_Twitter where date is not null)','insert Raw_Twitter\\nselect * from Temp_Raw_Twitter','drop table if exists Temp_Raw_Twitter'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          date = Date,",
+						"          tweets_published = {Tweets published},",
+						"          impressions,",
+						"          engagements,",
+						"          engagement_rate = {engagement rate},",
+						"          retweets,",
+						"          replies,",
+						"          likes,",
+						"          {user_profile_ clicks} = {user profile clicks},",
+						"          url_clicks = {url clicks},",
+						"          hashtag_clicks = {hashtag clicks},",
+						"          detail_expands = {detail expands},",
+						"          permalink_clicks = {permalink clicks},",
+						"          app_opens = {app opens},",
+						"          app_installs = {app installs},",
+						"          follows,",
+						"          email_tweet = {email tweet},",
+						"          dial_phone = {dial phone},",
+						"          media_views = {media views},",
+						"          media_engagements = {media engagements}",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Twitter_GetFiles')]",
+				"[concat(variables('factoryId'), '/datasets/Twitter_AzureSqlTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/logging')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('logging_connectionString')]"
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }
