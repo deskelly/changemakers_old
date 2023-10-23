@@ -106,7 +106,7 @@
 								},
 								"logStorageSettings": {
 									"linkedServiceName": {
-										"referenceName": "GoogleAnalytics_GetFiles",
+										"referenceName": "logging",
 										"type": "LinkedServiceReference"
 									}
 								},
