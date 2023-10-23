@@ -28,8 +28,8 @@
 			],
 			"scriptLines": [
 				"source(output(",
-				"          Date as date 'date',",
-				"          {Tweets published} as integer 'Tweets_published',",
+				"          Date as date 'dd/MM/yyyy',",
+				"          {Tweets published} as integer '##0',",
 				"          impressions as string,",
 				"          engagements as string,",
 				"          {engagement rate} as string,",
