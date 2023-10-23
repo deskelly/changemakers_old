@@ -10,7 +10,6 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "September daily_tweet_activity_metrics_JCDecaux_UK_20230901_20231001_en.csv",
 				"container": "twitter"
 			},
 			"columnDelimiter": ",",
