@@ -24,7 +24,7 @@
 			"transformations": [],
 			"scriptLines": [
 				"source(output(",
-				"          Date as date 'dd/MM/yyyy',",
+				"          Date as date 'yyyy-MM-dd',",
 				"          {Tweets published} as integer '000',",
 				"          impressions as integer '000',",
 				"          engagements as integer '000',",
